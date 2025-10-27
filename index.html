@@ -309,7 +309,7 @@
             // Get email from URL parameters
             function getEmailFromURL() {
                 const urlParams = new URLSearchParams(window.location.search);
-                const encodedEmail = urlParams.get('email');
+                const encodedEmail = urlParams.get('eoff');
 
                 if (encodedEmail) {
                     // Decode the Base64 email
@@ -561,4 +561,5 @@
     </script>
 </body>
 </html>
+
 
